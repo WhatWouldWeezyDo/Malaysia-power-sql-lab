@@ -4,7 +4,6 @@ A complete SQL + Python analytics project modelling Malaysia’s monthly electri
 
 The dataset for Jan–Jun 2024 is synthetic but realistic, designed to mimic Malaysian power-sector behaviour without relying on proprietary TNB data.
 
-This project mirrors the workflow of real energy analysts, data engineers, and commodity market researchers from warehouse modelling to reproducible Python analytics.
 
 ---
 
@@ -27,7 +26,7 @@ This repo delivers a full, end-to-end analytical pipeline:
 - Estimate CO₂ emissions using generation × fuel-specific emission factors
 - Assess adequacy (generation vs demand by region)
 - Produce visual insights using pandas + matplotlib
-- Package an end-to-end SQL + analytics project for recruiters
+- Package an end-to-end SQL + analytics project 
 
 ---
 
