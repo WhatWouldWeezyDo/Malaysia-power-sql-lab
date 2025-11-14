@@ -15,7 +15,6 @@ This repo delivers a full, end-to-end analytical pipeline:
 - DDL/DML in DBCODE to build & seed the database
 - Analytics SQL views (fuel mix, emissions, generation adequacy)
 - Python notebooks generating charts directly from SQLite
-- Clean, reproducible workflows suitable for interviews or portfolios
 
 ---
 
