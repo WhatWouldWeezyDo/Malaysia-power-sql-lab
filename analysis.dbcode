@@ -1,0 +1,123 @@
+cells:
+  - kind: 2
+    languageId: sql
+    value: |
+      -- Q1: Monthly CO2 by region (Jan–Jun 2024)
+      SELECT
+          year,
+          month,
+          region_name,
+          total_co2_kg / 1000.0 AS total_co2_tonnes
+      FROM v_monthly_emissions_by_region
+      ORDER BY year, month, region_name;
+  - kind: 2
+    languageId: sql
+    value: |
+      -- Q2: Monthly fuel cost by region (RM)
+      SELECT
+          year,
+          month,
+          region_name,
+          total_fuel_cost_rm
+      FROM v_monthly_fuel_cost_by_region
+      ORDER BY year, month, region_name;
+  - kind: 2
+    languageId: sql
+    value: |
+      -- Q3: Fuel mix share (%) by region and month
+      SELECT
+          year,
+          month,
+          region_name,
+          fuel_name,
+          total_mwh,
+          pct_mix
+      FROM v_fuel_mix
+      ORDER BY year, month, region_name, pct_mix DESC;
+  - kind: 2
+    languageId: sql
+    value: |
+      -- Q4: CO2 intensity (kg CO2 per MWh) by region over time
+      SELECT
+          year,
+          month,
+          region_name,
+          kg_co2_per_mwh
+      FROM v_co2_intensity
+      ORDER BY region_name, year, month;
+  - kind: 2
+    languageId: sql
+    value: |
+      -- Q5: Average CO2 intensity by fuel and region (Jan–Jun)
+      SELECT
+          region_name,
+          fuel_name,
+          SUM(co2_kg) / SUM(mwh) AS kg_co2_per_mwh
+      FROM v_generation_enriched
+      GROUP BY region_name, fuel_name
+      ORDER BY region_name, kg_co2_per_mwh DESC;
+  - kind: 2
+    languageId: sql
+    value: |
+      -- Q6: Average RM per MWh by fuel and region
+      SELECT
+          region_name,
+          fuel_name,
+          SUM(fuel_cost_rm) / SUM(mwh) AS rm_per_mwh
+      FROM v_generation_enriched
+      GROUP BY region_name, fuel_name
+      ORDER BY region_name, rm_per_mwh DESC;
+  - kind: 2
+    languageId: sql
+    value: |
+      -- Q7: kg CO2 emitted per RM of fuel cost
+      SELECT
+          year,
+          month,
+          region_name,
+          SUM(co2_kg) / SUM(fuel_cost_rm) AS kg_co2_per_rm
+      FROM v_generation_enriched
+      GROUP BY year, month, region_name
+      ORDER BY year, month, region_name;
+  - kind: 2
+    languageId: sql
+    value: |
+      -- Q8: Ranking months by total emissions (all regions)
+      SELECT
+          year,
+          month,
+          SUM(co2_kg) / 1000.0 AS total_co2_tonnes,
+          RANK() OVER (ORDER BY SUM(co2_kg) DESC) AS emission_rank
+      FROM v_generation_enriched
+      GROUP BY year, month
+      ORDER BY emission_rank;
+  - kind: 2
+    languageId: sql
+    value: |
+      -- Q9: National fuel mix Jan–Jun
+      SELECT
+          fuel_name,
+          SUM(mwh) AS total_mwh,
+          ROUND(
+              SUM(mwh) * 100.0 / SUM(SUM(mwh)) OVER (),
+              2
+          ) AS pct_mix
+      FROM v_generation_enriched
+      GROUP BY fuel_name
+      ORDER BY pct_mix DESC;
+  - kind: 2
+    languageId: sql
+    value: |
+      -- Q10: Emissions by region and fuel (tonnes)
+      SELECT
+          region_name,
+          fuel_name,
+          SUM(co2_kg) / 1000.0 AS co2_tonnes
+      FROM v_generation_enriched
+      GROUP BY region_name, fuel_name
+      ORDER BY region_name, co2_tonnes DESC;
+metadata:
+  conn:
+    id: GK5FVym4Z2cw3i7nMsumz
+    name: Malaysia_power.db
+  database: main

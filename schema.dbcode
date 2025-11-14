@@ -1,0 +1,129 @@
+cells:
+  - kind: 2
+    languageId: sql
+    value: |
+      CREATE TABLE IF NOT EXISTS dim_date_month (
+        date_id     INTEGER PRIMARY KEY,
+        year        INTEGER NOT NULL,
+        month       INTEGER NOT NULL CHECK (month BETWEEN 1 AND 12),
+        month_start TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS dim_region (
+        region_id   INTEGER PRIMARY KEY,
+        region_name TEXT NOT NULL UNIQUE
+      );
+
+      CREATE TABLE IF NOT EXISTS dim_fuel (
+        fuel_id   INTEGER PRIMARY KEY,
+        fuel_name TEXT NOT NULL UNIQUE
+      );
+
+      CREATE TABLE IF NOT EXISTS emission_factor (
+        fuel_id          INTEGER PRIMARY KEY,
+        kg_co2_per_mwh   REAL NOT NULL CHECK (kg_co2_per_mwh >= 0),
+        FOREIGN KEY (fuel_id) REFERENCES dim_fuel(fuel_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS fact_demand_monthly (
+        date_id      INTEGER NOT NULL,
+        region_id    INTEGER NOT NULL,
+        mwh_demand   REAL    NOT NULL CHECK (mwh_demand >= 0),
+
+        PRIMARY KEY (date_id, region_id),
+        FOREIGN KEY (date_id)   REFERENCES dim_date_month(date_id),
+        FOREIGN KEY (region_id) REFERENCES dim_region(region_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS fact_generation_monthly (
+        gen_id     INTEGER PRIMARY KEY,
+        date_id    INTEGER NOT NULL,
+        fuel_id    INTEGER NOT NULL,
+        region_id  INTEGER NOT NULL,
+        mwh        REAL    NOT NULL CHECK (mwh >= 0),
+
+        UNIQUE (date_id, region_id, fuel_id),
+
+        FOREIGN KEY (date_id)   REFERENCES dim_date_month(date_id),
+        FOREIGN KEY (fuel_id)   REFERENCES dim_fuel(fuel_id),
+        FOREIGN KEY (region_id) REFERENCES dim_region(region_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS fuel_price_monthly (
+        price_id  INTEGER PRIMARY KEY,
+        date_id   INTEGER NOT NULL,
+        fuel_id   INTEGER NOT NULL,
+        price_rm  REAL    NOT NULL CHECK (price_rm >= 0),
+        unit      TEXT    NOT NULL,
+
+        UNIQUE (date_id, fuel_id),
+
+        FOREIGN KEY (date_id) REFERENCES dim_date_month(date_id),
+        FOREIGN KEY (fuel_id) REFERENCES dim_fuel(fuel_id)
+      );
+  - kind: 2
+    languageId: sql
+    value: >
+      INSERT INTO dim_date_month (date_id, year, month, month_start)
+
+      VALUES (202401, 2024, 1, '2024-01-01');
+
+
+      INSERT INTO dim_region (region_id, region_name)
+
+      VALUES (1, 'Peninsular');
+
+
+      INSERT INTO dim_fuel (fuel_id, fuel_name)
+
+      VALUES (1, 'Coal');
+
+
+      INSERT INTO emission_factor (fuel_id, kg_co2_per_mwh)
+
+      VALUES (1, 940.0);
+
+
+      INSERT INTO fuel_price_monthly (price_id, date_id, fuel_id, price_rm,
+      unit)
+
+      VALUES (1, 202401, 1, 250.0, 'RM/MWh');
+
+
+      INSERT INTO fact_generation_monthly (gen_id, date_id, fuel_id, region_id,
+      mwh)
+
+      VALUES (1, 202401, 1, 1, 500000.0);
+  - kind: 2
+    languageId: sql
+    value: ""
+  - kind: 2
+    languageId: sql
+    value: >
+      SELECT 
+        d.year,
+        d.month,
+        r.region_name,
+        f.fuel_name,
+        g.mwh,
+        e.kg_co2_per_mwh,
+        g.mwh * e.kg_co2_per_mwh AS co2_kg,
+        p.price_rm,
+        g.mwh * p.price_rm       AS fuel_cost_rm
+      FROM fact_generation_monthly g
+
+      JOIN dim_date_month d      ON g.date_id  = d.date_id
+
+      JOIN dim_region r          ON g.region_id = r.region_id
+
+      JOIN dim_fuel f            ON g.fuel_id = f.fuel_id
+
+      JOIN emission_factor e     ON g.fuel_id = e.fuel_id
+
+      JOIN fuel_price_monthly p  ON g.date_id = p.date_id AND g.fuel_id =
+      p.fuel_id;
+metadata:
+  conn:
+    id: GK5FVym4Z2cw3i7nMsumz
+    name: Malaysia_power.db
+  database: main

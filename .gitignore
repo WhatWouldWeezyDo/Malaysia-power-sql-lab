@@ -1,0 +1,7 @@
+# ignore temp SQLite files
+*.db-shm
+*.db-wal
+
+# VSCode junk
+.vscode/
+

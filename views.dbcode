@@ -1,0 +1,95 @@
+cells:
+  - kind: 2
+    languageId: sql
+    value: |
+      CREATE VIEW IF NOT EXISTS v_generation_enriched AS
+      SELECT
+          d.year,
+          d.month,
+          r.region_name,
+          f.fuel_name,
+          g.mwh,
+          e.kg_co2_per_mwh,
+          g.mwh * e.kg_co2_per_mwh AS co2_kg,
+          p.price_rm,
+          g.mwh * p.price_rm AS fuel_cost_rm
+      FROM fact_generation_monthly g
+      JOIN dim_date_month d   ON g.date_id   = d.date_id
+      JOIN dim_region r       ON g.region_id = r.region_id
+      JOIN dim_fuel f         ON g.fuel_id   = f.fuel_id
+      JOIN emission_factor e  ON g.fuel_id   = e.fuel_id
+      JOIN fuel_price_monthly p
+            ON g.date_id = p.date_id
+           AND g.fuel_id = p.fuel_id;
+  - kind: 2
+    languageId: sql
+    value: |
+      SELECT *
+      FROM v_generation_enriched
+      LIMIT 20;
+  - kind: 2
+    languageId: sql
+    value: |
+      CREATE VIEW IF NOT EXISTS v_monthly_emissions_by_region AS
+      SELECT
+          year,
+          month,
+          region_name,
+          SUM(co2_kg) AS total_co2_kg
+      FROM v_generation_enriched
+      GROUP BY year, month, region_name
+      ORDER BY year, month, region_name;
+  - kind: 2
+    languageId: sql
+    value: |
+      SELECT * FROM v_monthly_emissions_by_region
+      LIMIT 20;
+  - kind: 2
+    languageId: sql
+    value: |
+      CREATE VIEW IF NOT EXISTS v_monthly_fuel_cost_by_region AS
+      SELECT
+          year,
+          month,
+          region_name,
+          SUM(fuel_cost_rm) AS total_fuel_cost_rm
+      FROM v_generation_enriched
+      GROUP BY year, month, region_name
+      ORDER BY year, month, region_name;
+  - kind: 2
+    languageId: sql
+    value: >
+      CREATE VIEW IF NOT EXISTS v_fuel_mix AS
+
+      SELECT
+          year,
+          month,
+          region_name,
+          fuel_name,
+          SUM(mwh) AS total_mwh,
+          ROUND(
+              SUM(mwh) * 100.0 / SUM(SUM(mwh)) OVER (PARTITION BY year, month, region_name),
+              2
+          ) AS pct_mix
+      FROM v_generation_enriched
+
+      GROUP BY year, month, region_name, fuel_name
+
+      ORDER BY year, month, region_name, pct_mix DESC;
+  - kind: 2
+    languageId: sql
+    value: |
+      CREATE VIEW IF NOT EXISTS v_co2_intensity AS
+      SELECT
+          year,
+          month,
+          region_name,
+          SUM(co2_kg) / SUM(mwh) AS kg_co2_per_mwh
+      FROM v_generation_enriched
+      GROUP BY year, month, region_name
+      ORDER BY year, month, region_name;
+metadata:
+  conn:
+    id: GK5FVym4Z2cw3i7nMsumz
+    name: Malaysia_power.db
+  database: main
