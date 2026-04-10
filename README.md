@@ -1,122 +1,58 @@
-#  Malaysia Power SQL Lab 
+# Malaysia Power SQL Lab
 
-This project is an analytical database modelling Malaysia’s monthly electricity generation, fuel mix, and CO₂ emissions across three grid regions (Peninsular, Sabah, Sarawak) for the period Jan 2022 – Dec 2024.
+An analytical database modelling Malaysia's monthly electricity generation, fuel mix, and CO₂ emissions across three grid regions — Peninsular Malaysia, Sabah, and Sarawak — covering January 2022 to December 2024.
 
-Annual generation totals and Grid Emission Factors are sourced from the **Energy Commission of Malaysia (Suruhanjaya Tenaga)** and distributed monthly with seasonal adjustments. Fuel mix proportions are calibrated to match the official Grid Emission Factors published by the Energy Commission.
-
-The goal: design a clean SQL schema, populate it with real-world-grounded data, create analytical views, and compute KPIs that describe Malaysia’s power sector. Everything is built and queried inside VS Code using the DB Code extension and SQLite.
+Annual generation totals and Grid Emission Factors (GEF) are sourced from the **Energy Commission of Malaysia (Suruhanjaya Tenaga)**. Fuel mix proportions are calibrated region-by-region to match the official published GEF values. Monthly figures are distributed with Malaysia-specific seasonal adjustments.
 
 ---
 
 ## Overview
 
-This repo delivers a full, end-to-end analytical pipeline:
+This project delivers a full end-to-end analytical pipeline:
 
-- Star-schema modelling (dimensions + fact tables)
-- DDL/DML in DBCODE to build & seed the database
-- **Real data**: 36 months × 3 regions × 4 fuels (396 generation records) grounded in official Energy Commission figures
-- Analytics SQL views (fuel mix, emissions, generation adequacy)
-- Python notebooks generating charts directly from SQLite
-
----
-
-##  Objectives
-
-- Model Malaysia’s power system using a warehouse-style schema
-- Analyze monthly generation, demand, fuel mix, and fuel prices
-- Estimate CO₂ emissions using generation × fuel-specific emission factors
-- Assess adequacy (generation vs demand by region)
-- Produce visual insights using pandas + matplotlib
-- Package an end-to-end SQL + analytics project 
+- **Star-schema modelling** — 5 dimension/fact tables with proper FK constraints and indexes
+- **Real data** — 36 months × 3 regions × 4 fuels (396 generation records) grounded in official Energy Commission figures
+- **Analytics views** — fuel mix, CO₂ emissions, generation adequacy, carbon intensity
+- **Python notebooks** — charts generated directly from SQLite via pandas + matplotlib
 
 ---
 
----
+## Tech Stack
 
-##  Tech Stack
-
-- **SQLite** (lightweight database engine)
-- **VS Code** + **DBCODE Notebooks**
-- **SQL** (CTEs, joins, views, warehouse structure)
-- **Python** (pandas + matplotlib for insights)
+- **SQLite** — lightweight database engine
+- **VS Code** + **DBCODE Notebooks** — schema, seed, and query execution
+- **SQL** — CTEs, window functions, views, star-schema design
+- **Python** — pandas + matplotlib for visualisation
 
 ---
 
-## Data Model Overview
+## Data Model
 
-The project follows a simple star-schema layout:
+The project uses a star schema with two fact tables and three dimension tables.
 
-1. **dim_month**  
-   - Stores `month_id` and `month_name`.  
-   - One month → many generation records.
+<img src="images/erd.png" width="700">
 
-2. **dim_fuel**  
-   - Categorizes each generation source (coal, gas, hydro, etc).
+### Tables
 
-3. **emission_factor**  
-   - Contains CO₂ emission intensities for each fuel type (kg CO₂ per MWh).  
-   - Each fuel has exactly one emission factor.
+| Table | Type | Description |
+|---|---|---|
+| `dim_date_month` | Dimension | Date spine — one row per month (202201–202412) |
+| `dim_region` | Dimension | Three Malaysian grid regions: Peninsular, Sabah, Sarawak |
+| `dim_fuel` | Dimension | Four fuel types: Coal, Gas, Hydro, Solar |
+| `emission_factor` | Reference | CO₂ intensity per fuel (kg CO₂/MWh output-based) |
+| `fact_generation_monthly` | Fact | Monthly net generation (MWh) by fuel and region |
+| `fact_demand_monthly` | Fact | Monthly electricity demand (MWh) by region |
+| `fuel_price_monthly` | Fact | Monthly fuel price (RM/MWh) by fuel type |
 
-4. **generation_fact**  
-   - The core fact table storing monthly generation (MWh) by fuel type.  
-   - Links to both dimension tables via foreign keys.
+### Column Reference
 
-### Why This Structure is Useful
-
-- **Fuel types can be updated without touching historic generation data.**  
-- **Emission factors are reusable across all months.**  
-- **The fact table can expand to more months or more fuels.**  
-- **Calculations can be pushed into views, keeping facts raw and clean.**  
-- **Analysts can join all dimensions to compute KPIs with minimal friction.**
-
-The ERD visualizes these relationships clearly.
-
- <img src="images/erd.png" width="700">
-
----
-## How the Database is Built
-
-1. **Run `schema.dbcode`**  
-   - Creates all dimension tables, fact tables, and keys.
-
-2. **Run `seed.dbcode`**  
-   - Populates tables with synthetic values for January–June.
-
-3. **Run `views.dbcode`**  
-   - Generates analytical views such as:  
-     - Monthly total generation  
-     - Monthly emissions  
-     - CO₂ intensity per MWh  
-     - Fuel-mix percentages  
-
-This process creates a dataset inside `malaysia_power.db`.
-
-##  Analysis Outputs
-
-Each notebook generates insights directly from the warehouse.
-
-### 1. Fuel Mix (Jan–Jun 2024)
-<img src="images/fuel_mix.png" width="700">
-
-**Summary:**  
-Malaysia’s grid is still coal-heavy in this synthetic dataset, with gas providing secondary support and modest contributions from hydro and solar. Seasonal fluctuations appear but base-load dependency remains stable.
-
----
-
-### 2. CO₂ Emissions by Fuel
-<img src="images/emmisions.png" width="700">
-
-**Summary:**  
-Emissions trend mirrors the fuel mix: coal dominates CO₂ output, while gas contributes significantly less per MWh. Renewables contribute essentially zero in this dataset, as expected.
-
----
-
-### 3. Generation-to-Demand Ratio (Adequacy)
-<img src="images/gen_vs_demand.png" width="700">
-
-**Summary:**  
-Peninsular Malaysia shows the highest adequacy margin.  
-Sabah & Sarawak trend very closely (due to similar synthetic scaling), maintaining ~24–25% adequacy across months. Peninsular dips early in the year before stabilizing.
+| Column | Table | Unit | Notes |
+|---|---|---|---|
+| `mwh` | `fact_generation_monthly` | MWh | Net generation per fuel/region/month |
+| `mwh_demand` | `fact_demand_monthly` | MWh | Total grid demand per region/month |
+| `kg_co2_per_mwh` | `emission_factor` | kg CO₂/MWh | Output-based emission intensity |
+| `price_rm` | `fuel_price_monthly` | RM/MWh | Levelised cost per fuel type |
+| `date_id` | All fact tables | INTEGER | Format: YYYYMM (e.g. 202403) |
 
 ---
 
@@ -124,34 +60,118 @@ Sabah & Sarawak trend very closely (due to similar synthetic scaling), maintaini
 
 | Data | Source |
 |---|---|
-| Annual net generation by region (2022–2024) | [Energy Commission of Malaysia – Grid Emission Factor Report](https://myenergystats.st.gov.my) |
+| Annual net generation by region (2022–2024) | [Energy Commission of Malaysia — Grid Emission Factor Report](https://myenergystats.st.gov.my) |
 | Grid Emission Factors by region (2022–2024) | Energy Commission of Malaysia / Sarawak Energy Berhad |
-| Fuel mix calibration | Derived from official GEF values using IPCC Tier 1 emission factors |
+| Fuel mix calibration | Derived to satisfy official GEF values using output-based emission factors |
 | Sarawak generation estimates | Sarawak Energy Berhad Annual Reports |
 
-> **Note on Sabah:** Sabah's grid runs on natural gas, diesel, and fuel oil. This model maps all thermal generation to the "Gas" fuel type. As a result, the model-computed CO₂ intensity for Sabah (~192 kg/MWh) is lower than the official GEF (~539 kg/MWh), which accounts for diesel and fuel oil. This is a known simplification of the schema.
+> **Note on Sabah:** Sabah's thermal generation uses natural gas, diesel, and fuel oil. This model maps all thermal output to the "Gas" fuel type. The model-computed CO₂ intensity for Sabah (~191 kg/MWh) is therefore lower than the official GEF (~539 kg/MWh), which accounts for diesel and fuel oil. This is a documented schema simplification.
 
 ---
 
-##  How to Run
+## Key Findings
 
-1. Open the repo in VS Code
-2. Install the DBCODE extension
-3. Run:
-   - `schema.dbcode` → create tables
-   - `seed.dbcode` → insert data
-   - `analysis.dbcode` → materialize analytic views
-4. Open the Python notebooks and run cells (they read directly from `malaysia_power.db`)
+### 1. National generation is growing — but so are emissions
+
+| Year | Generation (TWh) | CO₂ Emissions (Mt) |
+|---|---|---|
+| 2022 | 160.3 | 109.6 |
+| 2023 | 166.0 | 112.3 |
+| 2024 | 175.1 | 115.5 |
+
+Total generation grew **+9.2%** from 2022 to 2024. Despite coal's declining share, absolute CO₂ emissions rose **+5.4%** because the overall grid is expanding faster than it is decarbonising.
+
+### 2. Coal is declining but still dominant
+
+| Year | Coal % (National) | Coal % (Peninsular) | Gas % (National) |
+|---|---|---|---|
+| 2022 | 64.6% | 74.3% | 19.1% |
+| 2023 | 63.2% | 72.6% | 20.6% |
+| 2024 | 60.1% | 68.9% | 23.7% |
+
+Coal's national share fell **4.5 percentage points** over three years, with gas absorbing the shift. Peninsular Malaysia — which accounts for ~85% of national generation — is leading the transition, with its coal share dropping from 74.3% to 68.9%.
+
+### 3. Sarawak is Malaysia's cleanest grid by far
+
+| Region | Renewable Share (2024) | GEF (2024) |
+|---|---|---|
+| Peninsular | 8.0% | 740 kg/MWh |
+| Sabah | 52.2% | ~539 kg/MWh (official) |
+| Sarawak | 68.2% | 199 kg/MWh |
+
+Sarawak's hydro-dominant grid (Bakun, Murum dams) produces electricity at **one quarter the carbon intensity** of Peninsular Malaysia. Peninsular's GEF improved from 769 to 740 kg/MWh over the period — a meaningful but modest improvement.
+
+### 4. Fuel costs dropped 15% as the 2022 energy crisis faded
+
+| Year | Total Fuel Cost (RM billion) |
+|---|---|
+| 2022 | 54.0 |
+| 2023 | 45.9 |
+| 2024 | 45.8 |
+
+The 2022 global energy crisis drove coal and gas prices to multi-year highs. By 2024, prices had normalised — coal dropped from RM 350 to RM 265/MWh and gas from RM 420 to RM 310/MWh — reducing system-wide fuel costs by ~RM 8 billion.
+
+### 5. All regions maintain tight supply adequacy
+
+All three grids maintained a generation-to-demand ratio consistently above 100%, with a seasonal band of approximately **±3%**. No region shows signs of structural under-generation across the three-year period.
 
 ---
 
-##  About the Project
+## Analysis Outputs
 
-This project was created as a complete SQL + analytics portfolio piece focusing on Malaysia’s power sector.  
-It demonstrates skills required for roles in:
+### 1. Monthly Fuel Mix (Jan 2022 – Dec 2024)
+<img src="images/fuel_mix.png" width="700">
 
-- Energy analytics
-- SQL engineering
-- Data modelling
-- Commodity/market analysis
+Coal dominates at 60–65% of national generation across all three years, with a visible downward trend. Gas steadily fills the gap. Hydro and Solar remain small at the national level, though their contribution in Sarawak and Sabah is significant.
+
+---
+
+### 2. CO₂ Emissions by Fuel
+<img src="images/emmisions.png" width="700">
+
+Coal accounts for approximately **87–90% of all monthly CO₂ emissions** despite generating 60–65% of electricity — reflecting its higher emission intensity (940 kg/MWh vs 400 kg/MWh for gas). Gas emissions grow slightly year-on-year as its share of generation increases.
+
+---
+
+### 3. Total Monthly CO₂ Emissions
+<img src="images/total_emmisions.png" width="700">
+
+Monthly emissions range from approximately **9.0 to 9.9 million tonnes**, trending upward across the three-year period. Seasonal peaks occur in April–June (hot pre-monsoon period with elevated cooling demand). The upward trend reflects grid expansion outpacing decarbonisation.
+
+---
+
+### 4. Generation-to-Demand Ratio by Region
+<img src="images/gen_vs_demand.png" width="700">
+
+All three regions operate within a tight band around 103% (generation covering demand plus ~3% transmission losses). The seasonal oscillation is driven by hydro variability — higher hydro output during the northeast monsoon (Oct–Jan) pushes Sarawak and Sabah ratios above the Peninsular baseline.
+
+---
+
+## How to Run
+
+### Prerequisites
+
+```bash
+pip install pandas matplotlib
+```
+
+### Steps
+
+1. Open the repo in VS Code and install the [DBCODE extension](https://marketplace.visualstudio.com/items?itemName=dbcode.dbcode)
+2. Run in order:
+   - `sql/ddl/schema.dbcode` — create all tables and indexes
+   - `sql/dml/seed.dbcode` — populate with Jan 2022 – Dec 2024 data
+   - `sql/views/views.dbcode` — create analytical views
+   - `sql/analysis_queries/analysis.dbcode` — run KPI queries
+3. Open the notebooks in `notebooks/` and run all cells (they read from `../malaysia_power.db`)
+
+---
+
+## About
+
+This project was built as a complete SQL + analytics portfolio piece focused on Malaysia's power sector. It demonstrates skills relevant to roles in:
+
+- Energy analytics and market analysis
+- SQL engineering and data modelling
 - Reproducible analytical pipelines
+- Commodity and emissions reporting
