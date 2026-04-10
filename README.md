@@ -75,13 +75,13 @@ The ERD visualizes these relationships clearly.
 ---
 ## How the Database is Built
 
-1. **Run `ddl.sql`**  
+1. **Run `schema.dbcode`**  
    - Creates all dimension tables, fact tables, and keys.
 
-2. **Run `dml.sql`**  
+2. **Run `seed.dbcode`**  
    - Populates tables with synthetic values for January–June.
 
-3. **Run `views.sql`**  
+3. **Run `views.dbcode`**  
    - Generates analytical views such as:  
      - Monthly total generation  
      - Monthly emissions  
