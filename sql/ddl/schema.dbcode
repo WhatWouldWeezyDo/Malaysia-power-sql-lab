@@ -61,6 +61,13 @@ cells:
         FOREIGN KEY (date_id) REFERENCES dim_date_month(date_id),
         FOREIGN KEY (fuel_id) REFERENCES dim_fuel(fuel_id)
       );
+
+      -- Indexes for JOIN performance on fact tables
+      CREATE INDEX IF NOT EXISTS idx_gen_date   ON fact_generation_monthly(date_id);
+      CREATE INDEX IF NOT EXISTS idx_gen_fuel   ON fact_generation_monthly(fuel_id);
+      CREATE INDEX IF NOT EXISTS idx_gen_region ON fact_generation_monthly(region_id);
+      CREATE INDEX IF NOT EXISTS idx_demand_date ON fact_demand_monthly(date_id);
+      CREATE INDEX IF NOT EXISTS idx_price_date  ON fuel_price_monthly(date_id);
   - kind: 2
     languageId: sql
     value: >

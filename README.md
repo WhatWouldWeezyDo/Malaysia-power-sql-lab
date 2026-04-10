@@ -1,10 +1,10 @@
 #  Malaysia Power SQL Lab 
 
-This project is a small analytical database built to model Malaysia’s monthly electricity generation, fuel mix, and associated CO₂ emissions for a six-month period (Jan–Jun). It simulates the type of relational datasets used in energy market analysis.
+This project is an analytical database modelling Malaysia’s monthly electricity generation, fuel mix, and CO₂ emissions across three grid regions (Peninsular, Sabah, Sarawak) for the period Jan 2022 – Dec 2024.
 
-The goal is simple:
-design a clean SQL schema, populate it with structured data, create analytical views, and compute KPIs that describe Malaysia’s power sector.
-Everything is built and queried inside VS Code using the DB Code extension and SQLite.
+Annual generation totals and Grid Emission Factors are sourced from the **Energy Commission of Malaysia (Suruhanjaya Tenaga)** and distributed monthly with seasonal adjustments. Fuel mix proportions are calibrated to match the official Grid Emission Factors published by the Energy Commission.
+
+The goal: design a clean SQL schema, populate it with real-world-grounded data, create analytical views, and compute KPIs that describe Malaysia’s power sector. Everything is built and queried inside VS Code using the DB Code extension and SQLite.
 
 ---
 
@@ -14,6 +14,7 @@ This repo delivers a full, end-to-end analytical pipeline:
 
 - Star-schema modelling (dimensions + fact tables)
 - DDL/DML in DBCODE to build & seed the database
+- **Real data**: 36 months × 3 regions × 4 fuels (396 generation records) grounded in official Energy Commission figures
 - Analytics SQL views (fuel mix, emissions, generation adequacy)
 - Python notebooks generating charts directly from SQLite
 
@@ -116,6 +117,19 @@ Emissions trend mirrors the fuel mix: coal dominates CO₂ output, while gas con
 **Summary:**  
 Peninsular Malaysia shows the highest adequacy margin.  
 Sabah & Sarawak trend very closely (due to similar synthetic scaling), maintaining ~24–25% adequacy across months. Peninsular dips early in the year before stabilizing.
+
+---
+
+## Data Sources
+
+| Data | Source |
+|---|---|
+| Annual net generation by region (2022–2024) | [Energy Commission of Malaysia – Grid Emission Factor Report](https://myenergystats.st.gov.my) |
+| Grid Emission Factors by region (2022–2024) | Energy Commission of Malaysia / Sarawak Energy Berhad |
+| Fuel mix calibration | Derived from official GEF values using IPCC Tier 1 emission factors |
+| Sarawak generation estimates | Sarawak Energy Berhad Annual Reports |
+
+> **Note on Sabah:** Sabah's grid runs on natural gas, diesel, and fuel oil. This model maps all thermal generation to the "Gas" fuel type. As a result, the model-computed CO₂ intensity for Sabah (~192 kg/MWh) is lower than the official GEF (~539 kg/MWh), which accounts for diesel and fuel oil. This is a known simplification of the schema.
 
 ---
 
