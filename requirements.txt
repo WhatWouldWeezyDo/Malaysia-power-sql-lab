@@ -1,9 +1,9 @@
-# Notebooks 04 and 05 (counterfactual + forecast). The SQL/DBCODE notebooks
-# need nothing beyond a SQLite client.
+# Build the database and run the three notebooks (01_overview, 02_counterfactual, 03_forecast).
+# A plain SQLite client is enough for the .dbcode files in sql/.
 pandas>=2.0
 matplotlib>=3.7
 statsmodels>=0.14
 numpy>=1.24
-# To run the .ipynb files headlessly:
+# To execute the .ipynb files headlessly:
 #   pip install nbconvert
-#   jupyter nbconvert --to notebook --execute --inplace notebooks/04_counterfactual.ipynb
+#   jupyter nbconvert --to notebook --execute --inplace notebooks/01_overview.ipynb

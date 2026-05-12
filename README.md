@@ -1,324 +1,280 @@
 # Malaysia Power SQL Lab
-### Is Malaysia Actually Decarbonising? A Three-Year Investigation into the
-### Gap Between Fuel-Mix Transition and Absolute Emissions
+### Is Malaysia Decarbonising? Eight Years of the Power Sector, Month by Month —
+### and the Gap Between "the Coal Share Is Falling" and "Emissions Are Falling"
 
-A SQLite data warehouse of Malaysia's monthly electricity generation, fuel mix, fuel
-cost and CO₂ emissions — Peninsular Malaysia, Sabah and Sarawak, January 2022 to
-December 2024 — used to test one claim against the data, build a counterfactual, and
-fit a forecast whose failure mode is the point.
+A SQLite warehouse of Malaysia's **monthly** electricity generation by fuel, power-sector CO₂,
+demand and carbon intensity — **Jan 2018 to Dec 2025** — built deterministically from a single
+real source (Ember's *Monthly Electricity Data*), and used to test the decarbonisation claim
+against the data, build a counterfactual, and fit a forecast whose failure mode is the point.
+
+Nothing here is interpolated or assumed: `python scripts/build_db.py` builds `malaysia_power.db`
+from the committed slice in `data/sources/ember_malaysia_monthly.csv`, checking it reconciles with
+Ember's own reported totals before it writes a row. Every number in this README is reproduced by
+running the three notebooks.
 
 ---
 
 ## [1] The Question
 
-The standard line on Malaysia's power sector is that it is decarbonising: coal's share
-of the generation mix is falling, gas and solar are rising, the National Energy
-Transition Roadmap is in place, and a carbon tax arrives in 2026. All of that is true
-as far as it goes.
+The standard line on Malaysia's power sector is that it is decarbonising — coal's share of the
+mix is drifting down, solar is coming on, the National Energy Transition Roadmap is in place, a
+carbon tax arrives in 2026. This project asks a narrower question that the public reporting
+tends to skip: over the years we actually have monthly data for (2018–2025), did Malaysia's
+power-sector CO₂ go **down in absolute terms**, and did the **fuel mix** measurably clean up?
 
-But "the coal share is falling" and "emissions are falling" are different statements,
-and in a grid that is also growing they can point in opposite directions. This project
-asks the second question directly: over 2022–2024, did Malaysia's power-sector CO₂ go
-down in absolute terms? The answer matters to anyone modelling transition risk — a
-lender, an analyst, a regulator — because a transition that reduces *intensity* while
-*absolute emissions keep rising* is a different risk object than one that reduces both.
+It matters because a transition that lowers *intensity* while *absolute emissions keep rising* is
+a different risk object — for a lender, an analyst, a regulator — than one that lowers both, and
+the difference is exactly what gets lost when "the coal share fell" is reported as "Malaysia is
+decarbonising."
 
 ## [2] What I Found
 
-**Absolute emissions rose.** National power-sector CO₂ went from **109.6 Mt in 2022 to
-115.5 Mt in 2024 — up 5.4%** — for a three-year total of **337 Mt**. Over the same
-period generation grew **+9.2%** (160.3 → 175.1 TWh) and the grid's carbon intensity
-fell only **−3.5%** (≈684 → ≈660 kg CO₂/MWh). The decarbonisation of the *mix* was
-real but less than half the size of the *expansion*, so the level went up.
+**Absolute emissions rose, and the mix barely moved.** Over 2018→2024, national power-sector CO₂
+went from **106.4 Mt to 117.2 Mt (+10.2%)**, and **119.4 Mt by 2025 (+12.2%)** — a cumulative
+**883 Mt** across the eight years. Generation grew **+17%** over the same span; the grid's carbon
+intensity fell only **≈4%** (≈660 → ≈633 g CO₂/kWh). The mix-shift was real but small; the
+expansion was not.
 
-**Coal's share fell; coal's tonnage did not.** Coal dropped from **64.6% to 60.1%** of
-the national mix — but in absolute MWh, coal generation still rose slightly (103.6 →
-105.2 TWh, +1.6%). The growth in demand was met mostly by gas (30.7 → 41.5 TWh,
-+35.5%); the new gas went *on top of* coal, not in place of it. That is the gap between
-the narrative and the data in one sentence.
+**Coal's share didn't fall — coal's tonnage rose.** Coal was **43.7% of national generation in
+2018 and 44.8% in 2025** — flat-to-up, not down (with a 2020 spike to ≈50% during the COVID
+lockdown). In absolute terms coal generation rose **≈20%** (70.5 → 84.5 TWh). What actually shrank
+was **gas**, the *less* carbon-intensive fossil fuel: its share fell from **37.9% to 31.8%**. So
+the renewable share that did grow — hydro and bioenergy mostly, plus solar — went up by about
+**4 percentage points (18% → 22%)** and substituted for *gas*, while coal held its ground. Solar,
+the headline of every transition press release, went from essentially zero to **under 2%** of the
+mix.
 
-**The transition is geographically lopsided.** In 2024, Peninsular Malaysia (≈85% of
-national generation) ran at a carbon intensity around **740 kg/MWh**; Sarawak, on
-hydro, around **199 kg/MWh** — roughly one quarter. Decarbonisation is structurally
-easy where it has already happened and structurally hard where most of the load is.
+**The mix-shift, measured, bought about 2%.** A counterfactual that freezes the 2018 fuel mix and
+re-applies it to every month since produces ≈19 Mt *more* CO₂ over 2018–2025 than what actually
+happened — i.e. all the mix variation of the last eight years netted out to roughly a 2% cut on
+the cumulative total. Pushing harder — serving all generation growth since 2018 with zero-carbon,
+or redispatching half of coal to gas — buys ≈5% and ≈8% respectively. Section 5 has the numbers;
+none of them is a feasible-pathway claim.
 
-**Counterfactual.** Holding each region's total generation fixed and only re-slicing
-the fuel mix: applying Sarawak's 2024 mix everywhere would have cut cumulative
-2022–2024 emissions from 337 Mt to **99 Mt** (≈238 Mt avoided); a partial glide along a
-"net-zero-by-2030" pathway, realised only for its first two years, avoids about **12
-Mt**. The first number is an upper bound on what fuel-mix change *alone* could do — it
-is not a feasible pathway (Sabah has no hydro capacity to speak of); the second shows
-how little of a long glide is realised early. Both are quantified in Section 5.
-
-**Forecast.** A SARIMA model trained on 2022–2024 extrapolates to roughly **120 / 124 /
-130 Mt** for 2025 / 2026 / 2027 — i.e. business-as-usual keeps the level rising. The
-more useful output of that exercise is *not* those numbers (see Section 6 for why) but
-the demonstration that a historical-trend model cannot see the policy and demand shifts
-that will actually move the series.
+**A forecast that's worth less than its error bars.** A SARIMA model on the real 96-month series
+projects emissions drifting up to **≈125 Mt by 2028**, with a 95% interval that's genuinely wide
+(≈[109, 142]). The point of the forecast notebook isn't that number — it's that the backtests run
+at **5–7% error** and visibly miss the 2020 COVID dip and the 2024 demand surge, which is what
+historical-trend extrapolation does on a real grid heading into a structural transition.
 
 ## [3] Why This Project
 
-I started from the same shorthand most people use — coal share is down, therefore
-emissions are down — and went looking for the chart that showed it. The chart showed
-the opposite: a mix that is slowly greening, a grid that is growing faster, and an
-emissions line that ticks up every year. The project turned into an investigation of
-that gap: how big is it, what would close it, and what does a naive forecast miss?
+I started from the shorthand most people use — coal share down, therefore emissions down — and
+went looking for the chart that showed it. The chart showed a coal share that's basically flat, a
+grid that's bigger every year, and an emissions line that ticks up. The project turned into an
+investigation of that gap: how much has the mix actually changed, what would close the rest, and
+what does a naive forecast miss? The SQL warehouse and the notebooks are apparatus; the project is
+the question and the discipline of only using data I can stand behind.
 
-The SQL warehouse, the views, the notebooks — that is apparatus. The project is the
-question and the honesty about the answer's limits. Where the data is interpolated or a
-scenario is stylised, this README says so rather than rounding it off.
+That discipline cost some scope. There is no public **monthly, by-fuel, by-region** series for
+Malaysia, and no real free **fuel-price** series, so this is a *national* analysis with no cost
+dimension — see §7. What it gains in exchange: nothing in it is invented.
 
 ## [4] Data & Method
 
-The model is a star schema in SQLite (`malaysia_power.db`):
-
-| Table | Type | Description |
-|---|---|---|
-| `dim_date_month` | dimension | one row per month, 202201–202412 |
-| `dim_region` | dimension | Peninsular, Sabah, Sarawak |
-| `dim_fuel` | dimension | Coal, Gas, Hydro, Solar |
-| `emission_factor` | reference | output-based kg CO₂/MWh per fuel (Coal 940, Gas 400, Hydro 0, Solar 0) |
-| `fact_generation_monthly` | fact | net generation (MWh) by month × region × fuel — 36 × 3 × 4 = 396 rows |
-| `fact_demand_monthly` | fact | grid demand (MWh) by month × region |
-| `fuel_price_monthly` | fact | levelised fuel cost (RM/MWh) by month × fuel |
-
-Annual generation totals and Grid Emission Factors come from the **Energy Commission of
-Malaysia (Suruhanjaya Tenaga)**, with Sarawak figures cross-checked against Sarawak
-Energy Berhad disclosures. The region-by-region fuel mix is calibrated so the
-model-computed GEF matches the published GEF. Monthly figures are the annual totals
-distributed with a Malaysia-specific seasonal adjustment. The fuel-price series is a
-stylised levelised-cost assumption, not a measured price feed. Full lineage:
+Source: **Ember, *Monthly Electricity Data* (Malaysia)** — monthly generation by fuel (Coal, Gas,
+Hydro, Solar, Bioenergy, Other Fossil; TWh and %), total generation, demand, net imports,
+power-sector CO₂ by fuel and total, and CO₂ intensity, Jan 2018 – Dec 2025 (CC-BY-4.0). The
+committed file `data/sources/ember_malaysia_monthly.csv` is the Malaysia rows of that release;
+`scripts/build_db.py` builds the database from it and runs reconciliation checks (per-fuel sums
+match Ember's reported totals; implied intensity matches Ember's reported intensity). Full lineage:
 [`data/sources/SOURCES.md`](data/sources/SOURCES.md).
 
-<img src="images/erd.png" width="640">
+Schema (SQLite, star-ish):
 
-### Design choices & tradeoffs
+| Table | Grain | Contents |
+|---|---|---|
+| `dim_month` | month | `month_id` (YYYYMM), year, month, month_start — 201801…202512 |
+| `dim_fuel` | fuel | Coal, Gas, Other Fossil, Hydro, Bioenergy, Solar (Ember's 6 buckets) |
+| `fact_generation_monthly` | month × fuel | `twh`, `share_pct` |
+| `fact_emissions_monthly` | month × fuel | `mtco2` (Ember's power-sector CO₂) |
+| `fact_demand_monthly` | month | `demand_twh`, `net_imports_twh` |
+| `fact_summary_monthly` | month | Ember's reported `total_gen_twh`, `total_emissions_mtco2`, `co2_intensity_g_per_kwh` — kept verbatim as a cross-check |
+| views | — | `v_generation_enriched`, `v_fuel_mix`, `v_monthly_emissions`, `v_annual`, `v_implied_emission_factor` |
 
-- **Why a star schema** rather than one flat denormalised table: the alternative was
-  considered and rejected. A flat table re-stores region and fuel attributes on every
-  row (storage, but more importantly update anomalies — change an emission factor and
-  you have to find every row), and it makes the fact tables harder to extend
-  independently. The star schema costs a few joins; the analysis is join-heavy anyway.
-- **Why monthly grain** and not daily: the source reporting is annual, occasionally
-  quarterly — there is no public daily series to ground a daily table in, and the
-  consumers of this kind of analysis (transition-risk reporting, regulatory cycles) work
-  in months and years, not days. Daily grain would be precision the data can't support.
-- **Sabah, modelled as pure gas.** Sabah's thermal fleet runs natural gas, diesel and
-  fuel oil; this model maps all of it to "Gas". The honest consequence: the
-  model-computed Sabah carbon intensity (~191 kg/MWh) is well *below* the official GEF
-  (~539 kg/MWh), which prices in the diesel and fuel oil. Sabah is ~4% of national
-  generation, so this does not move the national totals much, but any Sabah-specific
-  figure here is understated and labelled as such.
+There is no `emission_factor` table — Ember reports CO₂ per fuel directly. The view
+`v_implied_emission_factor` derives the period-average intensity per fuel (Coal ≈0.90, Gas ≈0.67,
+Other Fossil ≈0.72, Bioenergy ≈0.23, Hydro ≈0.024, Solar ≈0.036 tCO₂/MWh) — used in the
+counterfactual, and flagged in §9 because Ember's gas figure is higher than a textbook CCGT.
 
-The existing exploratory notebooks (`notebooks/fuel_mix.ipynb`,
-`notebooks/emmisions.ipynb`, `notebooks/efficiency_baseload.ipynb`) produce the
-descriptive charts below:
+**Design choices & tradeoffs.** *Why a star-ish schema* over one flat table: avoids update
+anomalies (one place to fix a fuel attribute) and lets generation, emissions and demand extend
+independently; the analysis is join-heavy anyway. *Why monthly grain*: it's the finest grain the
+source supports — and unlike the prior version of this project, which interpolated monthly figures
+from annual totals, here the monthly data is actually monthly. *Why national*: the
+Peninsular/Sabah/Sarawak split is published only annually (Energy Commission handbooks); a monthly
+regional table would have to be estimated, so it's out. For the record, the Commission's published
+2024 Grid Emission Factors put Peninsular's grid around **≈740 g CO₂/kWh** and Sarawak's, on hydro,
+around **≈199** — a real geographic asymmetry, just one this national dataset can't animate.
 
-<img src="images/fuel_mix.png" width="640">
-<img src="images/emmisions.png" width="640">
-<img src="images/total_emmisions.png" width="640">
-<img src="images/gen_vs_demand.png" width="640">
+The descriptive notebook (`notebooks/01_overview.ipynb`) produces:
+
+<img src="outputs/fuel_mix.png" width="720">
+<img src="outputs/generation_by_fuel.png" width="720">
+<img src="outputs/emissions_monthly.png" width="720">
+<img src="outputs/co2_intensity.png" width="720">
 
 ## [5] Counterfactual Analysis
 
-[`notebooks/04_counterfactual.ipynb`](notebooks/04_counterfactual.ipynb) holds each
-region's *total* monthly generation exactly as observed and only redistributes it across
-the four fuels under three scenarios:
+[`notebooks/02_counterfactual.ipynb`](notebooks/02_counterfactual.ipynb) holds each month's *real*
+total generation constant and only re-slices it across fuels:
 
-| Scenario | Coal | Gas | Hydro | Solar | Definition |
-|---|---|---|---|---|---|
-| `Baseline` | actual | actual | actual | actual | the observed 2022–2024 mix |
-| `SarawakParity` | 13% | 19% | 65% | 3% | Sarawak's 2024 mix, applied to every region |
-| `NetZero2030Pathway` | 64.6→30% | 19.1→35% | 13.5→25% | 2.8→10% | a linear glide 2022→2030 of the national mix; only the 2022–2024 portion is realised |
+| Scenario | Definition |
+|---|---|
+| `Baseline` | observed mix and emissions, 2018–2025 |
+| `FrozenMix2018` | every month re-sliced by 2018's annual fuel-mix shares — "what did the mix-shift so far actually buy?" |
+| `GrowthServedClean` | each fossil fuel held at its 2018 same-calendar-month generation; all generation growth since served by zero-carbon — an upper-bound flavour |
+| `CoalHalvedToGas` | 50% of each month's coal generation reassigned to gas — a near-term redispatch lever (the gas plants exist) |
 
-Cumulative power-sector CO₂ over the three years:
+Cumulative power-sector CO₂ over the eight years (re-sliced scenarios use each fuel's *implied*
+intensity from Ember's data, not assumed factors):
 
-| Scenario | Cumulative CO₂ (Mt) | Avoided vs Baseline (Mt) | Value of avoided tonnes @ RM 20/t | @ RM 50/t |
+| Scenario | Cumulative CO₂ (Mt) | vs Baseline (Mt) | Value of the difference @ RM 20/t | @ RM 50/t |
 |---|---:|---:|---:|---:|
-| Baseline | 337.4 | — | — | — |
-| SarawakParity | 99.4 | 238.0 | RM 4.8 bn | RM 11.9 bn |
-| NetZero2030Pathway (partial) | 325.9 | 11.5 | RM 0.2 bn | RM 0.6 bn |
+| Baseline | 883.2 | — | — | — |
+| FrozenMix2018 | 902.1 | **−18.9** (the mix-shift *saved* this much) | RM 0.4 bn | RM 0.9 bn |
+| GrowthServedClean | 837.2 | 46.0 avoided | RM 0.9 bn | RM 2.3 bn |
+| CoalHalvedToGas | 814.9 | 68.3 avoided | RM 1.4 bn | RM 3.4 bn |
 
-<img src="outputs/counterfactual_monthly.png" width="720">
+<img src="outputs/counterfactual_monthly.png" width="760">
 <img src="outputs/counterfactual_summary.png" width="560">
 
-Two prices are quoted because two are relevant: **RM 20/tonne** is the low end of
-published projections for Malaysia's 2026 carbon tax on the iron, steel and energy
-industries (the rate was not gazetted as of writing — see `SOURCES.md`); **RM 50/tonne**
-is the floor price set for the first nature-based carbon credit auction on the Bursa
-Carbon Exchange (Kuamut Rainforest, July 2024), a voluntary-market reference. Neither is
-a market-clearing price; both bracket the order of magnitude.
+Two prices are quoted because two are relevant: **RM 20/t** is the low end of published projections
+for Malaysia's 2026 carbon tax on the iron, steel and energy industries (the rate was not gazetted
+as of writing — see `SOURCES.md`); **RM 50/t** is the floor price of the first nature-based carbon
+credit auction on the Bursa Carbon Exchange (Kuamut Rainforest, July 2024). Neither is a
+market-clearing price; both bracket the order of magnitude.
 
-**`SarawakParity` is an upper bound, not a recommendation.** It assumes every region can
-suddenly run on 65% hydro, which Peninsular Malaysia cannot without on the order of 15 GW
-of new build, and which Sabah cannot at all. It is there to size the maximum that
-fuel-mix change *by itself* could deliver — about a 70% cut — against which the realised
-trend (a few percent of intensity improvement) and the partial net-zero glide (≈12 Mt
-over two years) can be read. The notebook carries the full caveat list as its last cell.
+The honest reading: `FrozenMix2018` says the fuel-mix change of the last eight years was worth
+roughly **−19 Mt, about 2% of cumulative emissions** — small, and not monotonic (2020's coal-heavy
+COVID year ran *dirtier* than a frozen-2018 mix would have). `CoalHalvedToGas` looks like a weak
+lever — only ≈8% — partly because Ember's gas intensity (≈0.67 tCO₂/MWh) is well above a textbook
+CCGT, so switching coal to gas on these numbers doesn't buy what the usual comparison suggests.
+`GrowthServedClean` is an upper bound, not a pathway: it assumes every extra MWh since 2018 was
+zero-carbon, with no capacity, storage, transmission or cost modelling. The notebook carries the
+full caveat list.
 
 ## [6] Forecast Model
 
-[`notebooks/05_forecast.ipynb`](notebooks/05_forecast.ipynb) fits
-**SARIMA(1,1,1)(1,1,1,12)** to the 36-point monthly national CO₂ series: one regular
-difference for trend, one seasonal difference at lag 12 for the annual pattern, and an
-AR(1)/MA(1) pair plus one seasonal AR/MA term for residual structure. With only 36
-observations there is not enough data for a careful order search, so the order is fixed
-and what it does is reported — including where it breaks.
+[`notebooks/03_forecast.ipynb`](notebooks/03_forecast.ipynb) fits **SARIMA(1,1,1)(1,1,1,12)** to
+the 96-month national CO₂ series — `d=1` for trend, `D=1, s=12` for the annual pattern, AR(1)/MA(1)
+and one seasonal AR/MA term for residual structure. With 96 observations the order is comfortably
+identifiable; it's fixed rather than searched, on purpose.
 
-Two backtests, with different jobs:
+Two backtests:
 
 | Backtest | Train | Test | MAPE | RMSE | Bias |
 |---|---|---|---:|---:|---:|
-| 1 — in-distribution | 2022–2023 | 2024 | 0.40% | 0.04 Mt | −0.04 Mt |
-| 2 — stress (H2 2024) | 2022 – Jun 2024 | Jul – Dec 2024 | 0.27% | 0.03 Mt | +0.03 Mt |
+| 1 — in-distribution | 2018–2023 | 2024 | 5.2% | 0.58 Mt | −0.50 Mt |
+| 2 — across the 2020 break | 2018–2019 | 2020 (COVID) | 6.8% | 0.71 Mt | +0.10 Mt |
 
-<img src="outputs/forecast_backtest.png" width="720">
+<img src="outputs/forecast_backtest.png" width="780">
 
-Retrained on the full series, the forward forecast (95% CI) is:
+Retrained on the full series, the forward forecast (95% CI):
 
 | Year | Forecast CO₂ (Mt) | 95% CI |
 |---|---:|---|
-| 2025 | 119.5 | [119.5, 119.6] |
-| 2026 | 124.4 | [124.3, 124.4] |
-| 2027 | 130.1 | [129.9, 130.3] |
+| 2026 | 121.7 | [110.1, 133.3] |
+| 2027 | 123.4 | [109.3, 137.5] |
+| 2028 | 125.4 | [108.9, 141.8] |
 
-<img src="outputs/forecast_2025_2027.png" width="760">
+<img src="outputs/forecast_2026_2028.png" width="780">
 
-Read those error bars with suspicion. Backtest 2 was *designed* to expose regime-change
-blindness — train through a structural shift, test after it — but this dataset's monthly
-series is interpolated from annual totals with a fixed seasonal shape, so there is no
-real break for the model to miss, and both backtests come out near-perfect. A sub-0.5%
-MAPE and a CI you could measure with a ruler are not a sign the model is good; they are a
-sign the series is too smooth. Real monthly emissions are messier than this.
-
-So the forecast's value is not its central estimate. It is the structural point: a
-SARIMA model treats the data-generating process as stable, and Malaysia's energy system
-is not — capacity additions, the 2026 carbon tax, the National Energy Transition
-Roadmap, and new demand from data centres and EVs are all coming, and a model trained on
-historical aggregates will read every one of them as noise after the fact. The correct
-next step is a scenario-conditioned model that takes policy choices as *inputs*, not a
-better-tuned extrapolation.
+Neither backtest blows up, but both miss real structural movements. Backtest 1 *under-predicts*
+2024 by about half a megatonne a month — it didn't see the demand surge (data-centre load ramping)
+that pushed 2024 generation up nearly 6% on 2023. Backtest 2 carries the 2018–19 trend straight
+through the 2020 lockdown, missing the April–June dip; at the annual level the miss mostly washes
+out, which is itself the lesson — a structural break can be invisible in annual aggregates and
+still be there in the months. So the 5–7% errors are the honest accuracy of trend extrapolation on
+a real grid, an order of magnitude worse than the same model looks on a smooth synthetic series,
+and the gap is where the structural shocks live. The forecast to 2028 is worth less than that gap:
+Malaysia's power system has the 2026 carbon tax, the NETR, fast-growing data-centre load and EV
+adoption ahead of it, and a model trained on historical aggregates treats every one of those as
+noise until after the fact. A scenario-conditioned model — policy choices as *inputs* — is the
+right next instrument, not a better-tuned extrapolation.
 
 ## [7] What I Tried That Didn't Work
 
-Three approaches I weighed and set aside, and why — because the reasons are the part
-worth keeping:
-
-1. **Predicting the fuel mix from macro drivers** — I regressed the monthly national coal
-   share on demand, the coal price and the gas price (the appendix in
-   [`notebooks/04_counterfactual.ipynb`](notebooks/04_counterfactual.ipynb)). In levels it
-   fits almost perfectly — **R² ≈ 0.95** — which looks like a vindication of the behavioural
-   "cheap gas displaces coal" story until you read the coefficients: the coal-price and
-   gas-price terms come out almost exactly equal and opposite (≈ −0.0037 and +0.0036), the
-   collinearity tell of two regressors that, in this dataset, are little more than a year
-   label (the price series is constant within each calendar year). They proxy the downward
-   trend; they do not measure a price response. Strip the trend — first-difference
-   everything — and the only regressor with genuine within-year variation, the demand
-   change, explains about **9%** of the month-to-month movement in the coal share. (Adding
-   the price changes back in lifts that to 0.77, but only because they flag the two
-   year-boundary months where the share steps — a dummy, not a driver.) The mix doesn't
-   behave like a market clearing on fuel economics; it behaves like a fixed fleet dispatched
-   against load. Two lessons: model the constraint and the load, not the fuel price; and be
-   suspicious of a regressor — like this coarse price series — that is really "time" in a
-   costume.
-2. **Back-calculating the regional fuel mix from the national GEF.** Going the other way
-   — infer the three regions' mixes from one published national emission factor — is an
-   underdetermined system: one equation, twelve unknowns (4 fuels × 3 regions). You can
-   fit it, but you've chosen the answer, not recovered it. Lesson: top-down inference
-   can't reconstruct bottom-up granularity without more constraints; source-level data
-   beats a reconstructed aggregate, which is why the model is calibrated region by region
-   instead.
-3. **Daily granularity.** Tempting for the forecast, but the source reporting is annual
-   (sometimes quarterly), and the audience for this kind of analysis works in months and
-   years. A daily table would have been precision invented by the analyst, not supported
-   by the data or wanted by the reader. Lesson: granularity should match the consumer of
-   the analysis, not the curiosity of the producer.
+1. **Predicting the fuel mix from macro drivers.** I regressed the monthly national coal share on
+   demand, calendar-month dummies and a linear trend (appendix in `02_counterfactual.ipynb`).
+   Demand alone explains essentially nothing (**R² ≈ 0.01** — the coal *share* doesn't track load;
+   coal is near-baseload and the swings get absorbed elsewhere). Season + trend only reach **R² ≈
+   0.18**, leaving ~80% of the month-to-month coal share as idiosyncratic — plant outages, hydro
+   availability, gas supply, dispatch quirks — and the trend term comes out **not statistically
+   distinguishable from zero**. There is no measurable downward trend in the coal share over
+   2018–2025, and no tidy macro story behind it. Lesson: a generation mix isn't a smooth function
+   of observable drivers — it's a lumpy fleet whose monthly output is dominated by outages and
+   resource availability, and the policy signal, if it's in there at all, is below the noise floor.
+2. **Wanting the Energy Commission's own monthly data, and a regional split.** Neither is published
+   — the Commission reports generation by fuel and by region *annually*; the Single Buyer publishes
+   only Peninsular Malaysia, as dispatch reports that would have to be scraped. So this is a
+   national analysis on Ember's reconstructed monthly series. Lesson: scope the analysis to the
+   data that exists, not the data you wish existed.
+3. **Wanting fuel prices.** There is no real, free, Malaysia-specific monthly fuel-price series;
+   global benchmarks (Newcastle coal, JKM LNG) aren't what TNB actually pays. Rather than dress a
+   benchmark series up as Malaysian procurement cost, I cut the cost dimension entirely. Lesson: an
+   honest "we don't have that" beats a plausible-looking proxy.
 
 ## [8] Implications for Energy-Sector Risk Analysis
 
-This project produces data that *points toward* three questions; it does not answer them,
-and it deliberately names no specific bank, regulator or central bank.
+This project produces data that *points toward* a few questions; it does not answer them, and it
+names no specific bank, regulator or central bank.
 
-1. **Stranded-asset risk in Peninsular coal generation.** Peninsular Malaysia's coal
-   fleet — Manjung, Jimah, Tanjung Bin, Kapar, Jimah East, on the order of 12 GW combined
-   — has design lives in the 15–25-year range. Under essentially any 2050 net-zero
-   pathway, those plants retire well before their accounting end-of-life. The questions
-   that follow, for whoever does this work: which lenders hold the project-finance debt;
-   how do those maturity profiles line up against plausible retirement windows; and how,
-   if at all, is that exposure currently reflected in capital-adequacy frameworks. The
-   point of this section is that those are answerable, important questions — not that
-   this project answers them.
-2. **The forecast-volatility gap as a stress-testing lesson.** Section 6's larger point
-   generalises: any climate stress test that extrapolates a historical trend will
-   systematically under-price transition risk, because the trend by construction excludes
-   the policy and demand shocks that constitute the risk. Scenario-conditioned models —
-   policy as input — are the needed instrument, and this is a concrete small example of
-   why.
-3. **Geographic concentration as systemic risk.** The Peninsular–Sarawak asymmetry isn't
-   only an emissions story. The hard, slow, expensive part of the transition is
-   concentrated in the region that carries ~85% of the load and most of the coal
-   exposure. Transition risk concentrates where decarbonisation is structurally hardest —
-   which is also, here, where the financial exposure is largest.
+1. **Stranded-asset risk in Peninsular coal.** Peninsular Malaysia's coal fleet — Manjung, Jimah,
+   Tanjung Bin, Kapar, Jimah East, on the order of 12 GW combined — has design lives in the
+   15–25-year range; under any 2050 net-zero pathway those plants retire well before their
+   accounting end-of-life. The data here shows coal generation *rising* in absolute terms, not
+   winding down. The questions for whoever does that work: which lenders hold the project-finance
+   debt, how the maturity profiles line up against plausible retirement windows, and whether that
+   exposure is reflected in capital-adequacy frameworks. The point is that these are answerable,
+   important questions — not that this project answers them.
+2. **Trend extrapolation under-prices transition risk.** §6 is a concrete small example: a forecast
+   that treats policy and demand shocks as noise will, by construction, miss the transition. A
+   climate stress test built that way inherits the same blind spot; scenario-conditioned models are
+   the needed instrument.
+3. **Concentration.** The hard, slow, expensive part of the transition is concentrated in
+   Peninsular Malaysia, which carries most of the load and most of the coal. Transition risk
+   concentrates where decarbonisation is structurally hardest — which is also where the financial
+   exposure is largest.
 
 ## [9] Limitations & Known Gaps
 
 | Limitation | Effect |
 |---|---|
-| Sabah modelled as a single fuel ("Gas") | Sabah carbon intensity understated (~191 vs official ~539 kg/MWh); ~4% of national generation, so national totals barely move |
-| Monthly grain interpolated from annual totals with a fixed seasonal shape | Monthly curves are illustrative of shape; the annual and cumulative figures are the load-bearing numbers; the forecast inherits a smoother series than reality |
-| Fuel prices are stylised levelised-cost assumptions | The RM-billion fuel-cost figures are directional, not a price-feed reconstruction |
-| No renewable curtailment data | Renewable "generation" is delivered MWh; curtailed potential is invisible |
-| No distributed/rooftop solar | Solar here is utility-scale only; behind-the-meter generation is out of scope |
-| Counterfactual changes only the fuel mix | Holds generation constant — no capacity, storage, transmission, retirement, demand-response or capital-cost modelling; `SarawakParity` in particular is an upper bound, not a pathway |
-| SARIMA forecast assumes a stable process | Cannot capture the carbon tax, NETR, data-centre load or EV adoption — see Section 6 |
+| Ember's monthly fuel split is a reconstruction (published methodology), not raw Energy Commission reporting; for Malaysia the monthly detail is partly estimated by Ember | The monthly figures are a credible secondary source, not the primary record |
+| National only — no Peninsular/Sabah/Sarawak breakdown | The geographic asymmetry (Peninsular vs hydro-heavy Sarawak) is mentioned but not modelled here; it's published only annually |
+| Per-fuel CO₂ intensities are Ember's accounting, carried through as-is (gas ≈0.67 tCO₂/MWh — above a textbook CCGT; small non-zero figures for hydro/bioenergy) | Makes coal→gas switching look like a weaker emissions lever in the counterfactual than the usual comparison implies |
+| SARIMA forecast assumes a stable data-generating process | Can't capture the 2026 carbon tax, the NETR, data-centre load or EV adoption — and the backtests show 5–7% error and visible misses on 2020 and 2024 |
+| Counterfactual changes only the fuel mix, holding generation constant | No capacity, storage, transmission, retirement, demand-response or capital-cost modelling; `GrowthServedClean` in particular is an upper bound, not a pathway |
 
 ## [10] Reproducibility
 
-Data lineage — every figure ultimately traces to an Energy Commission of Malaysia
-publication (annual generation, Grid Emission Factors), with Sarawak cross-checked
-against Sarawak Energy Berhad, and the two carbon-price reference points to a Budget
-announcement and a Bursa Carbon Exchange auction. Sources, URLs and access dates:
-[`data/sources/SOURCES.md`](data/sources/SOURCES.md).
+The database is derived from a committed source file by a committed script:
+`python scripts/build_db.py` reads `data/sources/ember_malaysia_monthly.csv`, builds the schema and
+views, loads the data, and asserts it reconciles with Ember's reported totals before writing
+`malaysia_power.db`. Every number in this README is reproduced by running the three notebooks; the
+charts are written to `outputs/`. Lineage and licences: [`data/sources/SOURCES.md`](data/sources/SOURCES.md).
 
-Honest status: this is a portfolio analysis, not a governed pipeline. The raw source
-PDFs are *not* committed with checksums, there is no automated pull or schema validation,
-and there is no row-level link from `fact_generation_monthly` back to a specific table in
-a specific report. A production version would do all of that and derive the database
-deterministically from committed sources. It currently does not — the database is the
-artifact, and `SOURCES.md` is the lineage as far as it goes. Every *number in this
-README*, by contrast, is reproducible: run the two notebooks and the figures fall out.
+Honest residual: Ember itself is a well-documented *secondary* source — downstream of national and
+multilateral reporting — not the primary Energy Commission record, and (per §9) its monthly
+fuel-level split is partly estimated for countries like Malaysia that don't publish it directly.
+That's the boundary of the ground truth here.
 
 ## [11] How to Run
-
-### Prerequisites
 
 ```bash
 pip install -r requirements.txt          # pandas, matplotlib, statsmodels, numpy
 pip install nbconvert                     # only if running the .ipynb files headlessly
+
+python scripts/build_db.py                # builds malaysia_power.db from the committed Ember slice
+
+jupyter nbconvert --to notebook --execute --inplace notebooks/01_overview.ipynb
+jupyter nbconvert --to notebook --execute --inplace notebooks/02_counterfactual.ipynb
+jupyter nbconvert --to notebook --execute --inplace notebooks/03_forecast.ipynb
 ```
 
-### Build the database (SQL / DBCODE notebooks)
-
-Open the repo in VS Code with the [DBCODE extension](https://marketplace.visualstudio.com/items?itemName=dbcode.dbcode)
-and run, in order:
-
-1. `sql/ddl/schema.dbcode` — create tables and indexes
-2. `sql/dml/seed.dbcode` — load Jan 2022 – Dec 2024 data
-3. `sql/views/views.dbcode` — create analytical views
-4. `sql/analysis_queries/analysis.dbcode` — run the KPI queries
-
-(The repo also ships the built `malaysia_power.db`, so the notebooks run without this
-step.)
-
-### Run the notebooks (in order)
-
-```bash
-jupyter nbconvert --to notebook --execute --inplace notebooks/fuel_mix.ipynb
-jupyter nbconvert --to notebook --execute --inplace notebooks/emmisions.ipynb
-jupyter nbconvert --to notebook --execute --inplace notebooks/efficiency_baseload.ipynb
-jupyter nbconvert --to notebook --execute --inplace notebooks/04_counterfactual.ipynb
-jupyter nbconvert --to notebook --execute --inplace notebooks/05_forecast.ipynb
-```
-
-`04_counterfactual.ipynb` and `05_forecast.ipynb` read `../malaysia_power.db` and write
-their charts and CSVs to `outputs/`.
+(`malaysia_power.db` is also committed for convenience, so the notebooks run without the build step.
+DBCODE alternative: open the repo in VS Code with the
+[DBCODE extension](https://marketplace.visualstudio.com/items?itemName=dbcode.dbcode) and run
+`sql/ddl/schema.dbcode` → load via `scripts/build_db.py` → `sql/views/views.dbcode` →
+`sql/analysis_queries/analysis.dbcode`.)
