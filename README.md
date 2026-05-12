@@ -204,13 +204,23 @@ better-tuned extrapolation.
 Three approaches I weighed and set aside, and why — because the reasons are the part
 worth keeping:
 
-1. **Predicting the fuel mix from macro drivers** (regress coal/gas share on demand, gas
-   price, coal price). The idea was a behavioural model: when gas gets cheap, the grid
-   leans gas. It doesn't, much — Malaysia's generation mix is set by which plants exist,
-   their take-or-pay contracts and dispatch order, not by month-to-month price signals.
-   A capacity-constrained system doesn't respond to prices the way a market-clearing
-   model assumes, so a price-driven regression of the mix is explaining the wrong thing.
-   Lesson: model the constraint, not the price.
+1. **Predicting the fuel mix from macro drivers** — I regressed the monthly national coal
+   share on demand, the coal price and the gas price (the appendix in
+   [`notebooks/04_counterfactual.ipynb`](notebooks/04_counterfactual.ipynb)). In levels it
+   fits almost perfectly — **R² ≈ 0.95** — which looks like a vindication of the behavioural
+   "cheap gas displaces coal" story until you read the coefficients: the coal-price and
+   gas-price terms come out almost exactly equal and opposite (≈ −0.0037 and +0.0036), the
+   collinearity tell of two regressors that, in this dataset, are little more than a year
+   label (the price series is constant within each calendar year). They proxy the downward
+   trend; they do not measure a price response. Strip the trend — first-difference
+   everything — and the only regressor with genuine within-year variation, the demand
+   change, explains about **9%** of the month-to-month movement in the coal share. (Adding
+   the price changes back in lifts that to 0.77, but only because they flag the two
+   year-boundary months where the share steps — a dummy, not a driver.) The mix doesn't
+   behave like a market clearing on fuel economics; it behaves like a fixed fleet dispatched
+   against load. Two lessons: model the constraint and the load, not the fuel price; and be
+   suspicious of a regressor — like this coarse price series — that is really "time" in a
+   costume.
 2. **Back-calculating the regional fuel mix from the national GEF.** Going the other way
    — infer the three regions' mixes from one published national emission factor — is an
    underdetermined system: one equation, twelve unknowns (4 fuels × 3 regions). You can
