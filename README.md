@@ -7,10 +7,12 @@ demand and carbon intensity — **Jan 2018 to Dec 2025** — built deterministic
 real source (Ember's *Monthly Electricity Data*), and used to test the decarbonisation claim
 against the data, build a counterfactual, and fit a forecast whose failure mode is the point.
 
-Nothing here is interpolated or assumed: `python scripts/build_db.py` builds `malaysia_power.db`
-from the committed slice in `data/sources/ember_malaysia_monthly.csv`, checking it reconciles with
-Ember's own reported totals before it writes a row. Every number in this README is reproduced by
-running the three notebooks.
+The data is real monthly figures, not annual totals split out by hand: `python scripts/build_db.py`
+builds `malaysia_power.db` from the committed slice in `data/sources/ember_malaysia_monthly.csv`,
+reconciling it against Ember's reported totals before it writes a row, and every number in this
+README is reproduced by running the three notebooks. (One wrinkle, detailed in §4: Ember's monthly
+series for Malaysia is real dispatch data for Peninsular — ≈85% of national generation — with the
+≈15% Sabah/Sarawak fuel split interpolated from annual figures.)
 
 ---
 
@@ -77,8 +79,19 @@ Hydro, Solar, Bioenergy, Other Fossil; TWh and %), total generation, demand, net
 power-sector CO₂ by fuel and total, and CO₂ intensity, Jan 2018 – Dec 2025 (CC-BY-4.0). The
 committed file `data/sources/ember_malaysia_monthly.csv` is the Malaysia rows of that release;
 `scripts/build_db.py` builds the database from it and runs reconciliation checks (per-fuel sums
-match Ember's reported totals; implied intensity matches Ember's reported intensity). Full lineage:
-[`data/sources/SOURCES.md`](data/sources/SOURCES.md).
+match Ember's reported monthly totals; implied intensity matches Ember's reported intensity). Full
+lineage: [`data/sources/SOURCES.md`](data/sources/SOURCES.md).
+
+What sits behind Ember's Malaysia series, from their published methodology: annual generation comes
+from the Energy Institute; **monthly generation by fuel for Peninsular Malaysia — ≈85% of national
+output — is taken from the Grid System Operator** (real dispatch data); monthly *total* generation
+for Sabah and Sarawak (≈15%) is from the Department of Statistics, with the fuel split for those
+two regions disaggregated from their annual figures (i.e. interpolated); net imports are from the
+EIA. So this is mostly real monthly dispatch data, with the Sabah/Sarawak fuel mix the one
+interpolated piece — and because Ember reconciles and projects, its monthly values don't sum
+exactly to its annual figures, which is why `build_db.py` reconciles against the reported *monthly*
+totals. Ember's per-fuel CO₂ factors are applied by fuel (the gas factor accounts for combined heat
+and power, part of why it sits above a textbook CCGT).
 
 Schema (SQLite, star-ish):
 
@@ -223,27 +236,27 @@ names no specific bank, regulator or central bank.
 1. **Stranded-asset risk in Peninsular coal.** Peninsular Malaysia's coal fleet — Manjung, Jimah,
    Tanjung Bin, Kapar, Jimah East, on the order of 12 GW combined — has design lives in the
    15–25-year range; under any 2050 net-zero pathway those plants retire well before their
-   accounting end-of-life. The data here shows coal generation *rising* in absolute terms, not
-   winding down. The questions for whoever does that work: which lenders hold the project-finance
-   debt, how the maturity profiles line up against plausible retirement windows, and whether that
-   exposure is reflected in capital-adequacy frameworks. The point is that these are answerable,
-   important questions — not that this project answers them.
+   accounting end-of-life, and the data here shows coal generation *rising* in absolute terms, not
+   winding down. The questions that follow — which lenders hold the project-finance debt, how the
+   maturity profiles line up against plausible retirement windows, whether the exposure is
+   reflected in capital-adequacy frameworks — are answerable and important; this project doesn't
+   answer them, it just shows the trend they sit on.
 2. **Trend extrapolation under-prices transition risk.** §6 is a concrete small example: a forecast
-   that treats policy and demand shocks as noise will, by construction, miss the transition. A
-   climate stress test built that way inherits the same blind spot; scenario-conditioned models are
-   the needed instrument.
+   that treats policy and demand shocks as noise will, by construction, miss the transition — and a
+   climate stress test built that way inherits the blind spot. Scenario-conditioned models are the
+   needed instrument.
 3. **Concentration.** The hard, slow, expensive part of the transition is concentrated in
-   Peninsular Malaysia, which carries most of the load and most of the coal. Transition risk
-   concentrates where decarbonisation is structurally hardest — which is also where the financial
+   Peninsular Malaysia, which carries most of the load and most of the coal — i.e. transition risk
+   concentrates where decarbonisation is structurally hardest, which is also where the financial
    exposure is largest.
 
 ## [9] Limitations & Known Gaps
 
 | Limitation | Effect |
 |---|---|
-| Ember's monthly fuel split is a reconstruction (published methodology), not raw Energy Commission reporting; for Malaysia the monthly detail is partly estimated by Ember | The monthly figures are a credible secondary source, not the primary record |
-| National only — no Peninsular/Sabah/Sarawak breakdown | The geographic asymmetry (Peninsular vs hydro-heavy Sarawak) is mentioned but not modelled here; it's published only annually |
-| Per-fuel CO₂ intensities are Ember's accounting, carried through as-is (gas ≈0.67 tCO₂/MWh — above a textbook CCGT; small non-zero figures for hydro/bioenergy) | Makes coal→gas switching look like a weaker emissions lever in the counterfactual than the usual comparison implies |
+| Ember is a secondary source, not the primary Energy Commission record. For Malaysia the monthly series is real dispatch data for Peninsular (≈85% of generation, from the Grid System Operator) but the Sabah/Sarawak fuel split (≈15%) is interpolated from annual figures; and Ember's monthly values don't sum exactly to its own annual figures | The monthly fuel mix is roughly 85% metered / 15% interpolated — a strong secondary source, not the primary record |
+| National only — no Peninsular/Sabah/Sarawak breakdown in the released data | The geographic asymmetry (Peninsular vs hydro-heavy Sarawak) is mentioned but not modelled here; the regional split is published only annually |
+| Per-fuel CO₂ intensities are Ember's accounting, carried through as-is (gas ≈0.67 tCO₂/MWh — above a textbook CCGT, partly because Ember's gas factor accounts for combined heat and power; small non-zero figures for hydro/bioenergy) | Makes coal→gas switching look like a weaker emissions lever in the counterfactual than the usual comparison implies |
 | SARIMA forecast assumes a stable data-generating process | Can't capture the 2026 carbon tax, the NETR, data-centre load or EV adoption — and the backtests show 5–7% error and visible misses on 2020 and 2024 |
 | Counterfactual changes only the fuel mix, holding generation constant | No capacity, storage, transmission, retirement, demand-response or capital-cost modelling; `GrowthServedClean` in particular is an upper bound, not a pathway |
 
@@ -255,10 +268,11 @@ views, loads the data, and asserts it reconciles with Ember's reported totals be
 `malaysia_power.db`. Every number in this README is reproduced by running the three notebooks; the
 charts are written to `outputs/`. Lineage and licences: [`data/sources/SOURCES.md`](data/sources/SOURCES.md).
 
-Honest residual: Ember itself is a well-documented *secondary* source — downstream of national and
-multilateral reporting — not the primary Energy Commission record, and (per §9) its monthly
-fuel-level split is partly estimated for countries like Malaysia that don't publish it directly.
-That's the boundary of the ground truth here.
+Honest residual: Ember is a well-documented *secondary* source, not the primary Energy Commission
+record. For Malaysia the monthly series is real dispatch data for Peninsular (≈85% of generation,
+from the Grid System Operator) with the Sabah/Sarawak fuel split (≈15%) interpolated from annual
+figures (see §4 and §9), and Ember's monthly values don't sum exactly to its annual figures. That's
+the boundary of the ground truth here.
 
 ## [11] How to Run
 
